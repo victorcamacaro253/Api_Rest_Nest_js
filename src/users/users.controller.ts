@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query,Put,Param, UseInterceptors, UploadedFile,InternalServerErrorException,UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Post, Body,Patch, Query,Put,Param, UseInterceptors, UploadedFile,InternalServerErrorException,UploadedFiles,BadRequestException } from '@nestjs/common';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FileUploadInterceptor } from '../common/file-upload.interceptor'; // Import the custom interceptor
@@ -121,6 +121,19 @@ async createMultipleUsers(
   }
 
 
+
+  @Patch(':id/status/:status') // Example: PATCH /users/1/status/on
+  async changeStatus(
+    @Param('id') id: string,
+    @Param('status') status: string
+  ) {
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    return this.userService.changeStatus(userId, status);
+  }
  
 
 }

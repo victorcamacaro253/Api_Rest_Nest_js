@@ -1,4 +1,4 @@
-import { Injectable,ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable,ConflictException, NotFoundException,BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Users } from './user.entity';
@@ -159,4 +159,30 @@ async getUsersWithPagination(page: number = 1, limit: number = 10) {
   };
 }
 
+
+
+async changeStatus(user_id: number, status: string): Promise<{ message: string }> {
+  // Validate status
+  if (!['on', 'off'].includes(status)) {
+    throw new BadRequestException('Invalid status. Use "on" or "off"');
+  }
+
+  // Find the user by ID
+  const user = await this.userRepository.findOne({ where: { user_id } });
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  // Check if status is already the same
+  if (user.status === status) {
+    throw new BadRequestException(`User is already ${status}`);
+  }
+
+  // Update status
+  user.status = status;
+  await this.userRepository.save(user);
+
+  return { message: `User status changed to ${status}` };
 }
+}
+
