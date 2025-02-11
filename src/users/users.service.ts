@@ -100,4 +100,63 @@ async update(user_id:number,updateUserDto: Partial<CreateUserDto>): Promise<User
     return this.userRepository.save(user)
 }
 
+async createMultiple(createUsersDto: CreateUserDto[]): Promise<Users[]> {
+  const usersToCreate: Users[] = [];
+
+  for (const userDto of createUsersDto) {
+    const { username, email, password, personal_ID, role, imagePath } = userDto;
+
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({
+      where: [{ username }, { email }, { personal_ID }],
+    });
+
+    if (existingUser) {
+      throw new ConflictException(`User ${username} or email ${email} already exists`);
+    }
+
+    // Check if the role exists
+    const roleEntity = await this.roleRepository.findOne({ where: { id: role } });
+    if (!roleEntity) {
+      throw new NotFoundException(`Role with ID "${role}" not found`);
+    }
+
+    // Hash password
+    const hashedPassword = await hash(password, 10);
+
+    // Create user object
+    const newUser = this.userRepository.create({
+      ...userDto,
+      password: hashedPassword,
+      role: roleEntity,
+      image: imagePath,
+    });
+
+    usersToCreate.push(newUser);
+  }
+
+  // Save all users in bulk
+  return this.userRepository.save(usersToCreate);
+}
+
+
+async getUsersWithPagination(page: number = 1, limit: number = 10) {
+  const offset = (page - 1) * limit;
+
+  const [users, total] = await this.userRepository.findAndCount({
+    skip: offset,
+    take: limit,
+    relations: ['role'], // Load role relation
+    order: { user_id: 'ASC' }, // Optional sorting
+  });
+
+  return {
+    totalUsers: total,
+    totalPages: Math.ceil(total / limit),
+    currentPage: page,
+    limit,
+    data: users,
+  };
+}
+
 }
