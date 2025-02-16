@@ -7,6 +7,7 @@ import { RolesModule } from './roles/roles.module';
 import { AuthModule } from './authentication/authentication.module';
 import { ProductsModule } from './products/products.module';
 import { LoginHistoryModule } from './login-history/login-history.module';
+import { StockModule } from './stock/stock.module';
 
 import { ConfigModule } from '@nestjs/config';
 
@@ -30,7 +31,8 @@ import { ConfigModule } from '@nestjs/config';
     RolesModule,
     AuthModule,
     ProductsModule,
-    LoginHistoryModule
+    LoginHistoryModule,
+    StockModule,
   ],
   controllers: [AppController],
   providers: [AppService],
