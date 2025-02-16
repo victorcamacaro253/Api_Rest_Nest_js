@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException,NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Purchase } from './entities/purchase.entity';
@@ -416,6 +416,30 @@ export class PurchasesService {
       data: savedPurchase
     };
   }
+
+  async remove(id: number) {
+    // First find the purchase to verify it exists
+    const purchase = await this.purchaseRepository.findOne({
+      where: { purchase_id: id },
+      relations: ['purchasedProducts']
+    });
+  
+    if (!purchase) {
+      throw new NotFoundException(`Purchase with ID ${id} not found`);
+    }
+  
+    // Delete associated purchased products first
+    await this.purchasedProductRepository.delete({ purchase_id: id });
+  
+    // Delete the purchase
+    await this.purchaseRepository.delete(id);
+  
+    return {
+      message: `Purchase ${id} has been successfully deleted`,
+      data: purchase
+    };
+  }
+  
   
 }
 

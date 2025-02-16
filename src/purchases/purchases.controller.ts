@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards,Query, ParseFloatPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards,Query, ParseFloatPipe,Delete } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { AuthGuard } from '../authentication/guards/auth.guard';
@@ -78,4 +78,11 @@ getUserStatistics(
   findByUser(@Param('userId') userId: string) {
     return this.purchasesService.findByUser(+userId);
   }
+
+
+  @Delete(':id')
+async remove(@Param('id') id: number) {
+  return this.purchasesService.remove(id);
+}
+
 }
