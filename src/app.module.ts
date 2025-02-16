@@ -7,6 +7,7 @@ import { RolesModule } from './roles/roles.module';
 import { AuthModule } from './authentication/authentication.module';
 import { ProductsModule } from './products/products.module';
 import { LoginHistoryModule } from './login-history/login-history.module';
+import { PurchasesModule } from './purchases/purchases.module';
 import { StockModule } from './stock/stock.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { rateLimiterConfig } from './config/rate-limiter.config';
@@ -36,6 +37,7 @@ import { ConfigModule } from '@nestjs/config';
     ProductsModule,
     LoginHistoryModule,
     StockModule,
+    PurchasesModule
   ],
   controllers: [AppController],
   providers: [AppService],
