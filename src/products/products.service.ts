@@ -202,6 +202,26 @@ async createBulk(products: CreateProductDto[], imagePath: string | null) {
     }))
   };
 }
+
+
+
+async getProductsByCategory(categoryId: string): Promise<Product[]> {
+  return this.productRepository
+    .createQueryBuilder('p')
+    .leftJoinAndSelect('p.category', 'c')
+    .select([
+      'p.product_id',
+      'p.code',
+      'p.name',
+      'p.description',
+      'p.price',
+      'p.image',
+      'p.status',
+      'c.name'
+    ])
+    .where('c.id = :categoryId', { categoryId })
+    .getMany();
+}
   
 
   async update(id: number, updateProductDto: CreateProductDto) {

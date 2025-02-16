@@ -24,6 +24,10 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  @Get('category/:categoryId')
+  getProductsByCategory(@Param('categoryId') categoryId: string) {
+    return this.productsService.getProductsByCategory(categoryId);
+  }
   
   @Get('price-range')
   async getProductsByPriceRange(
