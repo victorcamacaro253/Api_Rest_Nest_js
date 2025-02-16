@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Put, Query,Param, Delete,UseInterceptors, 
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { AuthGuard } from '../authentication/guards/auth.guard';
+import { CreateBulkProductsDto } from './dto/create-bulk-products.dto';
 import { FileUploadInterceptor } from '../common/file-upload.interceptor'; // Import the custom interceptor
 
 
@@ -80,7 +81,17 @@ export class ProductsController {
   }
 
 
-  
+  @Post('bulk')
+@UseInterceptors(FileUploadInterceptor.uploadMultiple())
+async createBulk(
+  @Body() createBulkProductsDto: CreateBulkProductsDto,
+  @UploadedFile() file: Express.Multer.File
+) {
+  const imagePath = file ? `/uploads/${file.filename}` : null;
+  return this.productsService.createBulk(createBulkProductsDto.products, imagePath);
+}
+
+
   
   @Put(':id')
   update(@Param('id') id: string, @Body() updateProductDto: CreateProductDto) {
