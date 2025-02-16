@@ -85,6 +85,18 @@ if (existingUser ) {
   return user
 }
 
+async findByPersonalId(personal_ID:string): Promise<Users | null> {
+  const user = await this.userRepository.findOne({
+    where: { personal_ID },
+    relations: ['role'],
+    });
+
+    if(!user){
+      throw new NotFoundException(`User with personal ID ${personal_ID} not found`)
+    }
+    return user
+    }
+
 
 async update(user_id:number,updateUserDto: Partial<CreateUserDto>): Promise<Users>{
   const user = await this.userRepository.findOne({ where: { user_id } }); // Use an object with a where clause

@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body,Patch, Query,Put,Param, UseInterceptors, UploadedFile,InternalServerErrorException,UploadedFiles,BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body,Patch, Query,Put,Param, UseInterceptors, UploadedFile,InternalServerErrorException,UploadedFiles,BadRequestException, UseGuards  } from '@nestjs/common';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FileUploadInterceptor } from '../common/file-upload.interceptor'; // Import the custom interceptor
-
+import { AuthGuard } from 'src/authentication/guards/auth.guard';
 
 @Controller('users')
 export class UserController {
@@ -85,10 +85,17 @@ async createMultipleUsers(
 
 
   @Get()
+  @UseGuards(AuthGuard)  // Protect all routes in this controller
+
   findAll() {
     return this.userService.findAll();
   }
 
+  @Get('personal-id/:personal_ID')
+  async getUserByPersonalId(@Param('personal_ID')personal_ID:string){
+    return this.userService.findByPersonalId(personal_ID);
+
+  }
 
   @Get('paginate')
   async getUsersWithPagination(
