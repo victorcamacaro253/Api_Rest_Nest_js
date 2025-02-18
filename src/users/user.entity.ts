@@ -8,6 +8,18 @@ export class Users {
   user_id: number;
 
   @Column()
+  google_id: string;
+
+  @Column()
+  facebook_id: string;
+
+  @Column()
+  github_id: string;
+
+  @Column()
+  twitter_id: string;
+
+  @Column()
   fullname: string;
 
   @Column()

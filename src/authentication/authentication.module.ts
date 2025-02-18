@@ -6,12 +6,16 @@ import { Users } from '../users/user.entity';
 import { ConfigModule } from '@nestjs/config';
 import { JwtUtils } from '../utils/jwt.utils';
 import { LoginHistory } from '../login-history/login-history.entity';
+import { RefreshToken } from './strategies/refresh-token.entity';
+import { PassportModule } from '@nestjs/passport';
+import { GoogleStrategy } from '../authentication/strategies/oauth.strategy';
 
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Users,LoginHistory]), ConfigModule],
+  imports: [TypeOrmModule.forFeature([Users,LoginHistory,RefreshToken]), ConfigModule,
+  PassportModule.register({ defaultStrategy: 'google' })],
   controllers: [AuthController],
-  providers: [AuthenticationService, JwtUtils],
+  providers: [AuthenticationService, JwtUtils,GoogleStrategy],
   exports: [AuthenticationService],
 })
 export class AuthModule {}
