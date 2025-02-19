@@ -1,15 +1,20 @@
-import { Controller, Get, Post, Body, Put, Query,Param, Delete,UseInterceptors, UploadedFile,UseGuards,BadRequestException,NotFoundException, ParseFloatPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Query,Param, Delete,UseInterceptors, Res,UploadedFile,UseGuards,BadRequestException,NotFoundException, ParseFloatPipe } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { AuthGuard } from '../authentication/guards/auth.guard';
 import { CreateBulkProductsDto } from './dto/create-bulk-products.dto';
 import { FileUploadInterceptor } from '../common/file-upload.interceptor'; // Import the custom interceptor
+import { Response } from 'express';
+import { ExportService } from 'src/export/export.service';
 
 
 @Controller('products')
 //@UseGuards(AuthGuard)
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly exportService: ExportService
+  ) {}
 
   @Post()
   @UseInterceptors(FileUploadInterceptor.upload(),)
@@ -106,4 +111,106 @@ async createBulk(
   remove(@Param('id') id: string) {
     return this.productsService.remove(+id);
   }
+
+
+  @Get('export/:format')
+  async exportProducts(
+    @Param('format') format: string,
+    @Res() res: Response
+  ) {
+    const products = await this.productsService.findAll();
+    const headers = ['product_id', 'code', 'name', 'description', 'price', 'category', 'status'];
+
+    const formattedData = products.map(product => ({
+      ...product,
+      category: product.category.name,
+      price: Number(product.price)
+    }));
+
+    
+    const exportData = this.exportService.formatDataForExport(formattedData, format);
+  
+    switch (format.toLowerCase()) {
+      case 'excel':
+        const excelBuffer = await this.exportService.exportToExcel(exportData);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=products.xlsx');
+        res.send(excelBuffer);
+        break;
+  
+      case 'pdf':
+        const pdfBuffer = await this.exportService.exportToPDF(
+          exportData,
+          headers,
+          'Products Report'
+        );
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename=products.pdf');
+        res.send(pdfBuffer);
+        break;
+  
+      case 'csv':
+        const csv = await this.exportService.exportToCSV(exportData, headers);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=products.csv');
+        res.send(csv);
+        break;
+  
+      default:
+        throw new BadRequestException('Unsupported format. Use excel, pdf, or csv');
+    }
+  }
+
+  
+  @Get('export/:productId/:format')
+  async exportProductData(
+    @Param('productId') productId: number,
+    @Param('format') format: string,
+    @Res() res: Response
+  ) {
+    const product = await this.productsService.findOne(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    const headers = ['product_id', 'code', 'name', 'description', 'price', 'category', 'status'];
+    
+    const formattedData = [{
+      ...product,
+      category: product.category.name,
+      price: Number(product.price)
+    }];
+
+    switch (format.toLowerCase()) {
+      case 'excel':
+        const excelBuffer = await this.exportService.exportToExcel(formattedData);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=product_${productId}.xlsx`);
+        res.send(excelBuffer);
+        break;
+  
+      case 'pdf':
+        const pdfBuffer = await this.exportService.exportToPDF(
+          formattedData,
+          headers,
+          `Product ${productId} Details`
+        );
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=product_${productId}.pdf`);
+        res.send(pdfBuffer);
+        break;
+  
+      case 'csv':
+        const csv = await this.exportService.exportToCSV(formattedData, headers);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=product_${productId}.csv`);
+        res.send(csv);
+        break;
+  
+      default:
+        throw new BadRequestException('Unsupported format. Use excel, pdf, or csv');
+    }
+  }
+  
+
 }

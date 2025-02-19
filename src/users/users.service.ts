@@ -8,6 +8,7 @@ import { hash, compare } from 'bcrypt';
 import { Roles } from '../roles/role.entity'; // Import the Role entity
 
 
+
 @Injectable()
 export class UserService {
   constructor(
@@ -16,6 +17,7 @@ export class UserService {
     
     @InjectRepository(Roles)
     private roleRepository: Repository<Roles>,
+  
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<Users> {

@@ -439,6 +439,24 @@ export class PurchasesService {
       data: purchase
     };
   }
+
+  async prepareExportData() {
+    const purchases = await this.findAll();
+    
+    return purchases.map(purchase => ({
+      purchase_id: purchase.purchase_id,
+      user: purchase.user.fullname,
+      amount: purchase.amount,
+      date: purchase.date,
+      payment_method: purchase.payment_method,
+      promo_code: purchase.promo_code,
+      status: purchase.status,
+      products: purchase.purchasedProducts?.map(pp => 
+        `${pp.product.name} (${pp.quantity} units at $${pp.price})`
+      ).join(', ') || 'No products'
+    }));
+  }
+  
   
   
 }

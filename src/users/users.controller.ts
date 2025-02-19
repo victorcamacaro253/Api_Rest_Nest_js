@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body,Patch, Query,Put,Param, UseInterceptors, UploadedFile,InternalServerErrorException,UploadedFiles,BadRequestException, UseGuards  } from '@nestjs/common';
+import { Controller, Get, Post, Body,Patch, Query,Put,Param, UseInterceptors,Res, UploadedFile,InternalServerErrorException,UploadedFiles,BadRequestException, UseGuards  } from '@nestjs/common';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FileUploadInterceptor } from '../common/file-upload.interceptor'; // Import the custom interceptor
 import { AuthGuard } from 'src/authentication/guards/auth.guard';
+import { ExportService } from 'src/export/export.service';
+import { Response } from 'express';
+
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService,  
+    private readonly exportService: ExportService
+  ) {}
 
   
   @Post()
@@ -141,6 +146,92 @@ async createMultipleUsers(
 
     return this.userService.changeStatus(userId, status);
   }
- 
+
+
+  
+  @Get('export/:format')
+  async exportUsers(
+    @Param('format') format: string,
+    @Res() res: Response
+  ) {
+    const users = await this.userService.findAll();
+    const headers = ['user_id', 'fullname', 'username', 'email', 'personal_ID', 'phone', 'status'];
+    const formattedData = this.exportService.formatDataForExport(users, format);
+
+    switch (format.toLowerCase()) {
+      case 'excel':
+        const excelBuffer = await this.exportService.exportToExcel(formattedData);
+        res.set({
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': 'attachment; filename=users.xlsx'
+        });
+        return res.send(excelBuffer);
+
+      case 'pdf':
+        const pdfBuffer = await this.exportService.exportToPDF(
+          formattedData,
+          headers,
+          'Users Report'
+        );
+        res.set({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename=users.pdf'
+        });
+        return res.send(pdfBuffer);
+
+      case 'csv':
+        const csv = await this.exportService.exportToCSV(formattedData, headers);
+        res.set({
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename=users.csv'
+        });
+        return res.send(csv);
+
+      default:
+        throw new BadRequestException('Unsupported format. Use excel, pdf, or csv');
+    }
+  }
+
+  @Get('export/:userId/:format')
+  async exportUserData(
+    @Param('userId') userId: number,
+    @Param('format') format: string,
+    @Res() res: Response
+  ) {
+    const user = await this.userService.findOne(userId);
+    const headers = ['user_id', 'fullname', 'username', 'email', 'personal_ID', 'phone', 'status'];
+    const formattedData = this.exportService.formatDataForExport([user], format);
+  
+    switch (format.toLowerCase()) {
+      case 'excel':
+        const excelBuffer = await this.exportService.exportToExcel(formattedData);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=user_${userId}.xlsx`);
+        res.send(excelBuffer);
+        break;
+  
+      case 'pdf':
+        const pdfBuffer = await this.exportService.exportToPDF(
+          formattedData,
+          headers,
+          `User ${userId} Report`
+        );
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=user_${userId}.pdf`);
+        res.send(pdfBuffer);
+        break;
+  
+      case 'csv':
+        const csv = await this.exportService.exportToCSV(formattedData, headers);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=user_${userId}.csv`);
+        res.send(csv);
+        break;
+  
+      default:
+        throw new BadRequestException('Unsupported format. Use excel, pdf, or csv');
+    }
+  }
+  
 
 }

@@ -1,14 +1,19 @@
-import { Controller, Get, Post, Body, Param, UseGuards,Query, ParseFloatPipe,Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param,Res, UseGuards,Query,BadRequestException, ParseFloatPipe,Delete } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { AuthGuard } from '../authentication/guards/auth.guard';
 import { ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ExportService } from 'src/export/export.service';
+import { Response } from 'express';
+
 
 
 @Controller('purchases')
 //@UseGuards(AuthGuard)
 export class PurchasesController {
-  constructor(private readonly purchasesService: PurchasesService) {}
+  constructor(
+    private readonly purchasesService: PurchasesService,
+    private readonly exportService: ExportService) {}
 
   @Post()
   create(@Body() createPurchaseDto: CreatePurchaseDto) {
@@ -84,5 +89,61 @@ getUserStatistics(
 async remove(@Param('id') id: number) {
   return this.purchasesService.remove(id);
 }
+
+
+@Get('export/:format')
+async exportPurchases(
+  @Param('format') format: string,
+  @Res() res: Response
+) {
+  const headers = ['purchase_id', 'user_id', 'amount', 'date','products','status'];
+  const formattedData = await this.purchasesService.prepareExportData();
+
+  /*
+  const formattedData = purchases.map(purchase => ({
+    purchase_id: purchase.purchase_id,
+    user_id: purchase.user.fullname,
+    amount: purchase.amount,
+    date: purchase.date,
+    products: purchase.purchasedProducts.map(pp => 
+      `${pp.product.name} (${pp.quantity} units at $${pp.price})`
+    ).join(', '),
+    status: purchase.status,
+    
+  }));
+*/
+  console.log(formattedData);
+
+  switch (format.toLowerCase()) {
+    case 'excel':
+      const excelBuffer = await this.exportService.exportToExcel(formattedData);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=purchases.xlsx');
+      res.send(excelBuffer);
+      break;
+
+    case 'pdf':
+      const pdfBuffer = await this.exportService.exportPurchaseToPDF(
+        formattedData,
+        headers,
+        'Purchases Report'
+      );
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=purchases.pdf');
+      res.send(pdfBuffer);
+      break;
+
+    case 'csv':
+      const csv = await this.exportService.exportToCSV(formattedData, headers);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=purchases.csv');
+      res.send(csv);
+      break;
+
+    default:
+      throw new BadRequestException('Unsupported format. Use excel, pdf, or csv');
+  }
+}
+
 
 }

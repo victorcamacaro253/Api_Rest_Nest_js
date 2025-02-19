@@ -6,11 +6,13 @@ import { Users } from './user.entity';
 import { JwtUtils } from '../utils/jwt.utils';
 import { ConfigModule } from '@nestjs/config';
 import { Roles } from '../roles/role.entity';
+import { ExportModule } from 'src/export/export.module';
 
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Users,Roles]),
+    ExportModule,
     ConfigModule
   ],
   controllers: [UserController],
